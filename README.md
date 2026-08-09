@@ -1,46 +1,39 @@
-# Chiller Degradation Evaluator
+# Chiller Degradation Evaluator — Large File Edition
 
-## What it does
-Compares a clean chiller-plant CSV with one or more degraded/fouled CSVs on aligned timestamps.
+This version is prepared for the ~409.5 MB ChillerPlant CSV files.
 
-Outputs:
-- cooling energy (MWhth)
-- chiller electricity (MWh)
-- effective chiller COP
-- observed COP reduction (%)
-- observed COP health factor
-- chiller electricity penalty (%)
-- cooling change (%)
-- daily COP-loss time series
-- daily degradation flags using a user-selected screening threshold
+## Required GitHub structure
 
-The app recognizes filenames such as `_095.csv` as health factor F=0.95 and `_065.csv` as F=0.65.
-
-## Run locally
-```bash
-pip install -r requirements.txt
-streamlit run streamlit_app.py
+```text
+your-repository/
+├── streamlit_app.py
+├── requirements.txt
+└── .streamlit/
+    └── config.toml
 ```
 
-## Streamlit Cloud
-Upload `streamlit_app.py` and `requirements.txt` to a GitHub repository, then deploy the repository in Streamlit Community Cloud.
+The hidden `.streamlit/config.toml` file is essential.
 
-## Data assumptions for the supplied ChillerPlant files
-- timestamp: `Datetime`
-- cooling load: `CWL_SEC_LOAD`
-- load unit: W (converted to kW internally)
-- chiller power columns: all columns beginning `CHL_POW_`
+It contains:
 
-## Academic interpretation
-Observed chiller COP:
-COP = Q_cool / P_chiller
+```toml
+[server]
+maxUploadSize = 2000
+maxMessageSize = 2000
+```
 
-Observed COP degradation:
-D_COP = 1 - COP_degraded/COP_clean
+After adding these files to GitHub, reboot/redeploy the Streamlit app.
 
-If F_chiller is a remaining-performance factor:
-COP_f = COP_ff * F_chiller
-and nominal degradation severity is:
-delta_f = 1 - F_chiller
+## Memory-safe design
 
-For a strict degradation-only causal comparison, preserve weather, required cooling load, and non-degradation control settings across clean and degraded cases.
+Upload one clean file and one degraded file at a time. The app reads only:
+
+- `Datetime`
+- `CWL_SEC_LOAD`
+- `CHL_POW_1`
+- `CHL_POW_2`
+- `CHL_POW_3`
+
+instead of loading all 78 columns.
+
+Increasing the upload limit does not increase Streamlit Community Cloud RAM. For batch analysis of several 400+ MB files, Google Colab + Drive remains more robust.
